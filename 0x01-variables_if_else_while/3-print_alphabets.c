@@ -7,7 +7,7 @@
 
 int main(void)
 {
-        char c;
+	char c;
 
 	char d;
 
@@ -25,4 +25,4 @@ int main(void)
 		}
 	putchar('\n');
 	return (0);
-}	
+}
