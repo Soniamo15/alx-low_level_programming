@@ -1,135 +1,65 @@
 #include "main.h"
-
+#include <stdio.h>
 /**
- * create_buffer - Allocates 1024 bytes for a buffer.
- *
- * @file: The name of the file buffer is storing chars for.
- *
- * Return: A pointer to the newly-allocated buffer.
+ * error_file - checks if files can be opened.
+ * @file_from: file_from.
+ * @file_to: file_to.
+ * @argv: arguments vector.
+ * Return: no return.
  */
-char *create_buffer(char *file)
+void error_file(int file_from, int file_to, char *argv[])
 {
-	char *buffer;
-
-	buffer = malloc(sizeof(char) * 1024);
-	if (buffer == NULL)
+	if (file_from == -1)
 	{
-		dprintf(STDERR_FILENO,
-				"Error: Can't write to %s\n", file);
-		exit(99);
-	}
-	return (buffer);
-}
-
-/**
- * close_file - Closes file descriptors.
- *
- * @fd: The file descriptor to be closed.
- */
-void close_file(int fd)
-{
-	int c;
-
-	c = close(fd);
-	if (c == -1)
-	{
-		dprintf(STDERR_FILENO, "Error: Can't close fd %d\n", fd);
-		exit(100);
-	}
-}
-
-/**
- * read_file - Reads from one file descriptor and writes to another.
- *
- * @from: The file descriptor to read from.
- * @to: The file descriptor to write to.
- * @buffer: The buffer to store the data being read.
- *
- * Return: The number of bytes read.
- */
-ssize_t read_file(int from, int to, char *buffer)
-{
-	ssize_t r, w;
-
-	r = read(from, buffer, 1024);
-	if (r == -1)
-	{
-		return (-1);
-	}
-
-	w = write(to, buffer, r);
-	if (w == -1)
-	{
-		return (-1);
-	}
-
-	return (r);
-}
-
-/**
- * copy_file - Copies the contents of a file to another file.
- *
- * @from_path: The path to the file to be copied.
- * @to_path: The path to the file to copy to.
- *
- * Return: 0 on success.
- *
- * Description: If file_from does not exist or cannot br read - exit code
- * If file_to cannot be created or written to - exit code 99.
- * If file_to or file_from cannot be closed - exit code 100.
- */
-int copy_file(char *from_path, char *to_path)
-{
-	int from, to;
-	char *buffer;
-	ssize_t r;
-
-	from = open(from_path, O_RDONLY);
-	if (from == -1)
-	{
-		dprintf(STDERR_FILENO,
-				"Error: Can't read from file %s\n", from_path);
+		dprintf(STDERR_FILENO, "Error: Can't read from file %s\n", argv[1]);
 		exit(98);
 	}
-
-	buffer = create_buffer(to_path);
-
-	to = open(to_path, O_CREAT | O_WRONLY | O_TRUNC, 0664);
-	if (to == -1)
+	if (file_to == -1)
 	{
-		dprintf(STDERR_FILENO,
-				"Error: Can't write to %s\n", to_path);
-		free(buffer);
+		dprintf(STDERR_FILENO, "Error: Can't write to %s\n", argv[2]);
 		exit(99);
 	}
-
-	do {
-		r = read_file(from, to, buffer);
-		if (r == -1)
-		{
-			dprintf(STDERR_FILENO,
-					"Error: Can't read from file %s\n", from_path);
-			free(buffer);
-			exit(98);
-		}
-
-	} while (r > 0);
-
-	close_file(from);
-	close_file(to);
-	free(buffer);
-
-	return (0);
 }
-
 /**
- * main - Entry point for the program.
- *
- * @argc: The number of arguments supplied to the program.
- * @argv: An array of pointers to the arguments.
- *
- * Return: 0 on success.
- *
- * Description: If the argument count is incorrect - exit code 97.
+ * main - check the code for Holberton School students.
+ * @argc: number of arguments.
+ * @argv: arguments vector.
+ * Return: Always 0.
  */
 int main(int argc, char *argv[])
+{
+	int file_from, file_to, err_close;
+	ssize_t nchars, nwr;
+	char buf[1024];
+	if (argc != 3)
+	{
+		dprintf(STDERR_FILENO, "%s\n", "Usage: cp file_from file_to");
+		exit(97);
+	}
+	file_from = open(argv[1], O_RDONLY);
+	file_to = open(argv[2], O_CREAT | O_WRONLY | O_TRUNC | O_APPEND, 0664);
+	error_file(file_from, file_to, argv);
+	nchars = 1024;
+	while (nchars == 1024)
+	{
+		nchars = read(file_from, buf, 1024);
+		if (nchars == -1)
+			error_file(-1, 0, argv);
+		nwr = write(file_to, buf, nchars);
+		if (nwr == -1)
+			error_file(0, -1, argv);
+	}
+	err_close = close(file_from);
+	if (err_close == -1)
+	{
+		dprintf(STDERR_FILENO, "Error: Can't close fd %d\n", file_from);
+		exit(100);
+	}
+	err_close = close(file_to);
+	if (err_close == -1)
+	{
+		dprintf(STDERR_FILENO, "Error: Can't close fd %d\n", file_from);
+		exit(100);
+	}
+	return (0);
+}
